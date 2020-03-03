@@ -28,16 +28,16 @@ learning_rate = 1e-3
 
 img_transform = transforms.Compose([
     transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    transforms.Normalize([0.5], [0.5])  # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-dataset = MNIST('./data', transform=img_transform)
+dataset = MNIST('./data', transform=img_transform, download=True)
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
 
-class autoencoder(nn.Module):
+class AutoEncoder(nn.Module):
     def __init__(self):
-        super(autoencoder, self).__init__()
+        super(AutoEncoder, self).__init__()
         self.encoder = nn.Sequential(
             nn.Linear(28 * 28, 128),
             nn.ReLU(True),
@@ -57,16 +57,16 @@ class autoencoder(nn.Module):
         return x
 
 
-model = autoencoder().cuda()
+device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
+model = AutoEncoder()
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(
-    model.parameters(), lr=learning_rate, weight_decay=1e-5)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
 
 for epoch in range(num_epochs):
     for data in dataloader:
         img, _ = data
         img = img.view(img.size(0), -1)
-        img = Variable(img).cuda()
+        img = Variable(img)
         # ===================forward=====================
         output = model(img)
         loss = criterion(output, img)
@@ -76,7 +76,7 @@ for epoch in range(num_epochs):
         optimizer.step()
     # ===================log========================
     print('epoch [{}/{}], loss:{:.4f}'
-          .format(epoch + 1, num_epochs, loss.data[0]))
+          .format(epoch + 1, num_epochs, loss.item()))
     if epoch % 10 == 0:
         pic = to_img(output.cpu().data)
         save_image(pic, './mlp_img/image_{}.png'.format(epoch))
