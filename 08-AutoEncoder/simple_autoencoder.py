@@ -17,23 +17,47 @@ learning_rate = 1e-3
 
 
 class AutoEncoder(nn.Module):
+
     def __init__(self):
         super(AutoEncoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Linear(28 * 28, 128),
-            nn.ReLU(True),
-            nn.Linear(128, 64),
-            nn.ReLU(True), nn.Linear(64, 12), nn.ReLU(True), nn.Linear(12, 3))
+
+        # self.encoder = nn.Sequential(
+        self.linear_1 = nn.Linear(28 * 28, 128)
+        self.relu_1 = nn.ReLU(True)
+        self.linear_2 = nn.Linear(128, 64)
+        self.relu_2 = nn.ReLU(True)
+        self.linear_3 = nn.Linear(64, 12)
+        self.relu_3 = nn.ReLU(True)
+        self.linear_4 = nn.Linear(12, 3)
+        # )
         self.decoder = nn.Sequential(
             nn.Linear(3, 12),
             nn.ReLU(True),
             nn.Linear(12, 64),
             nn.ReLU(True),
             nn.Linear(64, 128),
-            nn.ReLU(True), nn.Linear(128, 28 * 28), nn.Tanh())
+            nn.ReLU(True),
+            nn.Linear(128, 28 * 28),
+            nn.Tanh()
+        )
+
+    def reparameterize(self, my, logvar):
+        pass
+
+    def encode(self, x):
+        h1 = self.linear_1(x)
+        h2 = self.relu_1(h1)
+        h3 = self.linear_2(h2)
+        h4 = self.relu_2(h3)
+        h5 = self.linear_3(h4)
+        h6 = self.relu_3(h5)
+        return self.linear_4(h6)
+
+    def decode(self, x):
+        pass
 
     def forward(self, x):
-        x = self.encoder(x)
+        x = self.encode(x)
         x = self.decoder(x)
         return x
 
