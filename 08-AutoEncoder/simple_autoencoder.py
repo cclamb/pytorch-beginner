@@ -21,7 +21,6 @@ class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
 
-        # self.encoder = nn.Sequential(
         self.linear_1 = nn.Linear(28 * 28, 128)
         self.relu_1 = nn.ReLU(True)
         self.linear_2 = nn.Linear(128, 64)
@@ -29,17 +28,15 @@ class AutoEncoder(nn.Module):
         self.linear_3 = nn.Linear(64, 12)
         self.relu_3 = nn.ReLU(True)
         self.linear_4 = nn.Linear(12, 3)
-        # )
-        self.decoder = nn.Sequential(
-            nn.Linear(3, 12),
-            nn.ReLU(True),
-            nn.Linear(12, 64),
-            nn.ReLU(True),
-            nn.Linear(64, 128),
-            nn.ReLU(True),
-            nn.Linear(128, 28 * 28),
-            nn.Tanh()
-        )
+
+        self.d_linear_1 = nn.Linear(3, 12)
+        self.d_relu_1 = nn.ReLU(True)
+        self.d_linear_2 = nn.Linear(12, 64)
+        self.d_relu_2 = nn.ReLU(True)
+        self.d_linear_3 = nn.Linear(64, 128)
+        self.d_relu_3 = nn.ReLU(True)
+        self.d_linear_4 = nn.Linear(128, 28 * 28)
+        self.d_tanh = nn.Tanh()
 
     def reparameterize(self, my, logvar):
         pass
@@ -54,11 +51,18 @@ class AutoEncoder(nn.Module):
         return self.linear_4(h6)
 
     def decode(self, x):
-        pass
+        h1 = self.d_linear_1(x)
+        h2 = self.d_relu_1(h1)
+        h3 = self.d_linear_2(h2)
+        h4 = self.d_relu_2(h3)
+        h5 = self.d_linear_3(h4)
+        h6 = self.d_relu_3(h5)
+        h7 = self.d_linear_4(h6)
+        return self.d_tanh(h7)
 
     def forward(self, x):
         x = self.encode(x)
-        x = self.decoder(x)
+        x = self.decode(x)
         return x
 
 
