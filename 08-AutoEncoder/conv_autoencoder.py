@@ -69,7 +69,7 @@ def main():
     for epoch in range(num_epochs):
         for data in dataloader:
             img, _ = data
-            img = Variable(img).cuda()
+            img = Variable(img)
             # ===================forward=====================
             output = model(img)
             loss = criterion(output, img)
