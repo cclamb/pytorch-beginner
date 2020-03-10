@@ -129,10 +129,12 @@ def main():
 
     for epoch in range(num_epochs):
         for data in dataloader:
-            data = data.to(device)
+            #data = torch.FloatTensor(data)
+            #data.to(device)
             img, _ = data
             img = img.view(img.size(0), -1)
             img = Variable(img)
+            img.to(device)
             # ===================forward=====================
             output = model(img)
             loss = criterion(output, img)
