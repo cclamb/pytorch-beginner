@@ -107,12 +107,14 @@ def main():
     model = AutoEncoder()
 
     if torch.cuda.is_available():
-        torch.device("cuda")
+        device = torch.device("cuda")
         if torch.cuda.device_count() > 1:
             print("Let's use", torch.cuda.device_count(), "GPUs!")
             model = nn.DataParallel(model)
     else:
-        torch.device("cpu")
+        device = torch.device("cpu")
+
+    model.to(device)
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
