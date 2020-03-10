@@ -1,4 +1,3 @@
-__author__ = 'SherlockLiao'
 
 import os
 
@@ -16,30 +15,55 @@ batch_size = 128
 learning_rate = 1e-3
 
 
+class DCIGNClamping(torch.autograd.Function):
+
+    @staticmethod
+    def forward(ctx, data_in, index):
+        mask = torch.ones([3, ], dtype=torch.bool)
+        mask[index] = False
+        ctx.save_for_backward(data_in, index, mask)
+        batch_index = 0
+        data_in[:, mask] = torch.mean(data_in[:, mask], dim=batch_index, keepdim=True)
+        return data_in
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        data_in, index, mask = ctx.saved_tensors
+        grad_input = grad_output.clone()
+        batch_index = 0
+        grad_input[:, mask] = data_in[:, mask] - torch.mean(data_in[:, mask], dim=batch_index, keepdim=True)
+        return grad_input, None
+
+
 class AutoEncoder(nn.Module):
 
     def __init__(self):
         super(AutoEncoder, self).__init__()
+        self.latent_dim = 3
+        self.dcign = DCIGNClamping.apply
 
         self.linear_1 = nn.Linear(28 * 28, 128)
-        self.relu_1 = nn.ReLU(True)
+        self.relu_1 = nn.ReLU(inplace=True)
         self.linear_2 = nn.Linear(128, 64)
-        self.relu_2 = nn.ReLU(True)
+        self.relu_2 = nn.ReLU(inplace=True)
         self.linear_3 = nn.Linear(64, 12)
-        self.relu_3 = nn.ReLU(True)
-        self.linear_4 = nn.Linear(12, 3)
+        self.relu_3 = nn.ReLU(inplace=True)
+        self.linear_4 = nn.Linear(12, self.latent_dim)
 
-        self.d_linear_1 = nn.Linear(3, 12)
-        self.d_relu_1 = nn.ReLU(True)
+        self.d_linear_1 = nn.Linear(self.latent_dim, 12)
+        self.d_relu_1 = nn.ReLU(inplace=True)
         self.d_linear_2 = nn.Linear(12, 64)
-        self.d_relu_2 = nn.ReLU(True)
+        self.d_relu_2 = nn.ReLU(inplace=True)
         self.d_linear_3 = nn.Linear(64, 128)
-        self.d_relu_3 = nn.ReLU(True)
+        self.d_relu_3 = nn.ReLU(inplace=True)
         self.d_linear_4 = nn.Linear(128, 28 * 28)
         self.d_tanh = nn.Tanh()
 
-    def reparameterize(self, my, logvar):
-        pass
+    @staticmethod
+    def reparameterize(x):
+        std = torch.exp(0.5 * x)
+        eps = torch.randn_like(std)
+        return x + eps * std
 
     def encode(self, x):
         h1 = self.linear_1(x)
@@ -60,10 +84,13 @@ class AutoEncoder(nn.Module):
         h7 = self.d_linear_4(h6)
         return self.d_tanh(h7)
 
-    def forward(self, x):
+    def forward(self, x, idx=None):
         x = self.encode(x)
-        x = self.decode(x)
-        return x
+        z = self.reparameterize(x)
+        if self.training:
+            z = self.dcign(z, idx)
+        out = self.decode(z)
+        return out
 
 
 def to_img(x):
