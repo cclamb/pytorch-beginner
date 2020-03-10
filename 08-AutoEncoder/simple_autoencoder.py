@@ -104,8 +104,16 @@ def main():
     if not os.path.exists('./mlp_img'):
         os.mkdir('./mlp_img')
 
-    torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
     model = AutoEncoder()
+
+    if torch.cuda.is_available():
+        torch.device("cuda")
+        if torch.cuda.device_count() > 1:
+            print("Let's use", torch.cuda.device_count(), "GPUs!")
+            model = nn.DataParallel(model)
+    else:
+        torch.device("cpu")
+
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
 
