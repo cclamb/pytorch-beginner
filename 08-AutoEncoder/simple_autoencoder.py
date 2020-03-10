@@ -104,17 +104,12 @@ def main():
     if not os.path.exists('./mlp_img'):
         os.mkdir('./mlp_img')
 
-    model = AutoEncoder()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = AutoEncoder().to(device)
 
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-        if torch.cuda.device_count() > 1:
-            print("Let's use", torch.cuda.device_count(), "GPUs!")
-            model = nn.DataParallel(model)
-    else:
-        device = torch.device("cpu")
-
-    model.to(device)
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = nn.DataParallel(model)
 
     criterion = nn.MSELoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
@@ -129,12 +124,9 @@ def main():
 
     for epoch in range(num_epochs):
         for data in dataloader:
-            #data = torch.FloatTensor(data)
-            #data.to(device)
             img, _ = data
             img = img.view(img.size(0), -1)
-            img = Variable(img)
-            img.to(device)
+            img = Variable(img).to(device)
             # ===================forward=====================
             output = model(img)
             loss = criterion(output, img)
