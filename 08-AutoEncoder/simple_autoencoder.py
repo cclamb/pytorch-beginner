@@ -21,7 +21,8 @@ class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
         self.latent_dim = 3
-        self.dcign = DCIGNClamping(3).apply
+        DCIGNClamping.latent_dim = self.latent_dim
+        self.dcign = DCIGNClamping.apply
 
         self.linear_1 = nn.Linear(28 * 28, 128)
         self.relu_1 = nn.ReLU(inplace=True)
