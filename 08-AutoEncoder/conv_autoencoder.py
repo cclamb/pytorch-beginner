@@ -18,27 +18,50 @@ learning_rate = 1e-3
 class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
-        self.encoder = nn.Sequential(
-            nn.Conv2d(1, 16, 3, stride=3, padding=1),  # b, 16, 10, 10
-            nn.ReLU(True),
-            nn.MaxPool2d(2, stride=2),  # b, 16, 5, 5
-            nn.Conv2d(16, 8, 3, stride=2, padding=1),  # b, 8, 3, 3
-            nn.ReLU(True),
-            nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
-        )
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(8, 16, 3, stride=2),  # b, 16, 5, 5
-            nn.ReLU(True),
-            nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1),  # b, 8, 15, 15
-            nn.ReLU(True),
-            nn.ConvTranspose2d(8, 1, 2, stride=2, padding=1),  # b, 1, 28, 28
-            nn.Tanh()
-        )
 
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
+        self.conv2d_1 = nn.Conv2d(1, 16, 3, stride=3, padding=1)  # b, 16, 10, 10
+        self.relu_1 = nn.ReLU(True)
+        self.max_pool_2d_1 = nn.MaxPool2d(2, stride=2)  # b, 16, 5, 5
+        self.conv2d_2 = nn.Conv2d(16, 8, 3, stride=2, padding=1)  # b, 8, 3, 3
+        self.relu_2 = nn.ReLU(True)
+        self.max_pool_2d_2 = nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
+
+        self.d_conv_trans_2d_1 = nn.ConvTranspose2d(8, 16, 3, stride=2)  # b, 16, 5, 5
+        self.d_relu_1 = nn.ReLU(True)
+        self.d_conv_trans_2d_2 = nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1)  # b, 8, 15, 15
+        self.d_relu_2 = nn.ReLU(True)
+        self.d_conv_trans_2d_3 = nn.ConvTranspose2d(8, 1, 2, stride=2, padding=1)  # b, 1, 28, 28
+        self.d_tanh = nn.Tanh()
+
+    @staticmethod
+    def reparameterize(x):
+        std = torch.exp(0.5 * x)
+        eps = torch.randn_like(std)
+        return x + eps * std
+
+    def encode(self, x):
+        h1 = self.conv2d_1(x)
+        h2 = self.relu_1(h1)
+        h3 = self.max_pool_2d_1(h2)
+        h4 = self.conv2d_2(h3)
+        h5 = self.relu_2(h4)
+        return self.max_pool_2d_2(h5)
+
+    def decode(self, x):
+        h1 = self.d_conv_trans_2d_1(x)
+        h2 = self.d_relu_1(h1)
+        h3 = self.d_conv_trans_2d_2(h2)
+        h4 = self.d_relu_2(h3)
+        h5 = self.d_conv_trans_2d_3(h4)
+        return self.d_tanh(h5)
+
+    def forward(self, x, idx=None):
+        x = self.encode(x)
+        z = self.reparameterize(x)
+        if self.training:
+            z = self.dcign(z, idx)
+        out = self.decode(z)
+        return out
 
 
 def to_img(x):

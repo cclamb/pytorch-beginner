@@ -9,29 +9,11 @@ from torchvision import transforms
 from torchvision.datasets import MNIST
 from torchvision.utils import save_image
 
+from DCIGNClamping import DCIGNClamping
+
 num_epochs = 100
 batch_size = 128
 learning_rate = 1e-3
-
-
-class DCIGNClamping(torch.autograd.Function):
-
-    @staticmethod
-    def forward(ctx, data_in, index):
-        mask = torch.ones([3, ], dtype=torch.bool)
-        mask[index] = False
-        ctx.save_for_backward(data_in, index, mask)
-        batch_index = 0
-        data_in[:, mask] = torch.mean(data_in[:, mask], dim=batch_index, keepdim=True)
-        return data_in
-
-    @staticmethod
-    def backward(ctx, grad_output):
-        data_in, index, mask = ctx.saved_tensors
-        grad_input = grad_output.clone()
-        batch_index = 0
-        grad_input[:, mask] = data_in[:, mask] - torch.mean(data_in[:, mask], dim=batch_index, keepdim=True)
-        return grad_input, None
 
 
 class AutoEncoder(nn.Module):
@@ -39,7 +21,7 @@ class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
         self.latent_dim = 3
-        self.dcign = DCIGNClamping.apply
+        self.dcign = DCIGNClamping(3).apply
 
         self.linear_1 = nn.Linear(28 * 28, 128)
         self.relu_1 = nn.ReLU(inplace=True)
