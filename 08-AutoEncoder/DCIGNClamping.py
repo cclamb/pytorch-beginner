@@ -15,7 +15,7 @@ class DCIGNClamping(torch.autograd.Function):
         return data_in
 
     @staticmethod
-    def backward(self, ctx, grad_output):
+    def backward(ctx, grad_output):
         data_in, index, mask = ctx.saved_tensors
         grad_input = grad_output.clone()
         batch_index = 0
