@@ -45,6 +45,7 @@ class AutoEncoder(nn.Module):
         return x + eps * std
 
     def encode(self, x):
+        import ipdb; ipdb.set_trace()
         h1 = self.conv2d_1(x)
         h2 = self.relu_1(h1)
         h3 = self.max_pool_2d_1(h2)
@@ -62,9 +63,12 @@ class AutoEncoder(nn.Module):
 
     def forward(self, x, idx=None):
         x = self.encode(x)
-        z = self.reparameterize(x)
-        if self.training:
-            z = self.dcign(z, idx)
+
+        if self.is_clamping:
+            z = self.reparameterize(x)
+            if self.training:
+                z = self.dcign(z, idx)
+
         out = self.decode(z)
         return out
 
@@ -80,6 +84,20 @@ def main():
     if not os.path.exists('./dc_img'):
         os.mkdir('./dc_img')
 
+    device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
+    model = AutoEncoder(is_clamping=True).to(device)
+
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = nn.DataParallel(model)
+
+    criterion = nn.MSELoss()
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=1e-5
+    )
+
     img_transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Normalize([0.5], [0.5])  # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
@@ -88,16 +106,10 @@ def main():
     dataset = MNIST('./data', transform=img_transform, download=True)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
-    torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
-    model = AutoEncoder()
-    criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate,
-                                 weight_decay=1e-5)
-
     for epoch in range(num_epochs):
         for data in dataloader:
             img, _ = data
-            img = Variable(img)
+            img = Variable(img).to(device)
             # ===================forward=====================
             output = model(img)
             loss = criterion(output, img)

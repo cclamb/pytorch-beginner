@@ -18,8 +18,10 @@ learning_rate = 1e-3
 
 class AutoEncoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, is_clamping=True):
         super(AutoEncoder, self).__init__()
+
+        self.is_clamping = is_clamping
 
         self.latent_dim = 3
         DCIGNClamping.latent_dim = self.latent_dim
@@ -69,9 +71,12 @@ class AutoEncoder(nn.Module):
 
     def forward(self, x, idx=None):
         x = self.encode(x)
-        z = self.reparameterize(x)
-        if self.training:
-            z = self.dcign(z, idx)
+
+        if self.is_clamping:
+            z = self.reparameterize(x)
+            if self.training:
+                z = self.dcign(z, idx)
+
         out = self.decode(z)
         return out
 
@@ -88,14 +93,18 @@ def main():
         os.mkdir('./mlp_img')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = AutoEncoder().to(device)
+    model = AutoEncoder(is_clamping=False).to(device)
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
         model = nn.DataParallel(model)
 
     criterion = nn.MSELoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=learning_rate,
+        weight_decay=1e-5
+    )
 
     img_transform = transforms.Compose([
         transforms.ToTensor(),
