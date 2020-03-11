@@ -20,6 +20,7 @@ class AutoEncoder(nn.Module):
 
     def __init__(self):
         super(AutoEncoder, self).__init__()
+
         self.latent_dim = 3
         DCIGNClamping.latent_dim = self.latent_dim
         self.dcign = DCIGNClamping.apply

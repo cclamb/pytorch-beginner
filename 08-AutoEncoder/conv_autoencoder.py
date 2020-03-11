@@ -1,14 +1,15 @@
-__author__ = 'SherlockLiao'
+
+import os
 
 import torch
-import torchvision
 from torch import nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.utils import save_image
 from torchvision.datasets import MNIST
-import os
+
+from DCIGNClamping import DCIGNClamping
 
 num_epochs = 100
 batch_size = 128
@@ -18,6 +19,10 @@ learning_rate = 1e-3
 class AutoEncoder(nn.Module):
     def __init__(self):
         super(AutoEncoder, self).__init__()
+
+        self.latent_dim = 3
+        DCIGNClamping.latent_dim = self.latent_dim
+        self.dcign = DCIGNClamping.apply
 
         self.conv2d_1 = nn.Conv2d(1, 16, 3, stride=3, padding=1)  # b, 16, 10, 10
         self.relu_1 = nn.ReLU(True)
