@@ -73,11 +73,11 @@ class AutoEncoder(nn.Module):
         x = self.encode(x)
 
         if self.is_clamping:
-            z = self.reparameterize(x)
+            x = self.reparameterize(x)
             if self.training:
-                z = self.dcign(z, idx)
+                x = self.dcign(x, idx)
 
-        out = self.decode(z)
+        out = self.decode(x)
         return out
 
 
