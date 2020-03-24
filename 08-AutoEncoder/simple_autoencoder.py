@@ -93,7 +93,7 @@ def main():
         os.mkdir('./mlp_img')
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = AutoEncoder(is_clamping=False).to(device)
+    model = AutoEncoder(is_clamping=True).to(device)
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
