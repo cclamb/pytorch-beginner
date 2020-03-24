@@ -47,7 +47,7 @@ class AutoEncoder(nn.Module):
         return x + eps * std
 
     def encode(self, x):
-        import ipdb; ipdb.set_trace()
+        # import ipdb; ipdb.set_trace()
         h1 = self.conv2d_1(x)
         h2 = self.relu_1(h1)
         h3 = self.max_pool_2d_1(h2)
