@@ -17,8 +17,10 @@ learning_rate = 1e-3
 
 
 class AutoEncoder(nn.Module):
-    def __init__(self):
+    def __init__(self, is_clamping=True):
         super(AutoEncoder, self).__init__()
+
+        self.is_clamping = is_clamping
 
         self.latent_dim = 3
         DCIGNClamping.latent_dim = self.latent_dim
