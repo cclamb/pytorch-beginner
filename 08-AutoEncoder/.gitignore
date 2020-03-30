@@ -1,3 +1,5 @@
-.DS_Store
+**/.DS_Store
 mlp_img/*
 dc_img/*
+*.pth
+**/.idea
