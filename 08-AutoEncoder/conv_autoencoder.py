@@ -12,9 +12,10 @@ from torchvision.datasets import MNIST
 from DCIGNClamping import DCIGNClamping
 
 num_epochs = 100
-batch_size = 128
+batch_size = 200
 learning_rate = 1e-3
 
+clamp = False
 
 class AutoEncoder(nn.Module):
     def __init__(self, is_clamping=True):
@@ -32,9 +33,9 @@ class AutoEncoder(nn.Module):
         self.conv2d_2 = nn.Conv2d(16, 8, 3, stride=2, padding=1)  # b, 8, 3, 3
         self.relu_2 = nn.ReLU(True)
         self.max_pool_2d_2 = nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
-        self.fc = nn.Linear(4096, self.latent_dim)
+        self.fc = nn.Linear(batch_size * 32, self.latent_dim)
 
-        self.d_fc = nn.Linear(self.latent_dim, 32)
+        self.d_fc = nn.Linear(self.latent_dim, batch_size * 32)
         self.d_conv_trans_2d_1 = nn.ConvTranspose2d(8, 16, 3, stride=2)  # b, 16, 5, 5
         self.d_relu_1 = nn.ReLU(True)
         self.d_conv_trans_2d_2 = nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1)  # b, 8, 15, 15
@@ -55,12 +56,12 @@ class AutoEncoder(nn.Module):
         h4 = self.conv2d_2(h3)
         h5 = self.relu_2(h4)
         h6 = self.max_pool_2d_2(h5)
-        h6 = h6.view(-1, 4096)
+        h6 = h6.view(-1, batch_size * 32)
         return self.fc(h6)
 
     def decode(self, x):
         h0 = self.d_fc(x)
-        h0 = h0.view([2, 8, 2, 1])
+        h0 = h0.view([batch_size, 8, 2, 2])
         h1 = self.d_conv_trans_2d_1(h0)
         h2 = self.d_relu_1(h1)
         h3 = self.d_conv_trans_2d_2(h2)
@@ -72,11 +73,11 @@ class AutoEncoder(nn.Module):
         x = self.encode(x)
 
         if self.is_clamping:
-            z = self.reparameterize(x)
+            x = self.reparameterize(x)
             if self.training:
-                z = self.dcign(z, idx)
+                x = self.dcign(x, idx)
 
-        out = self.decode(z)
+        out = self.decode(x)
         return out
 
 
@@ -92,7 +93,7 @@ def main():
         os.mkdir('./dc_img')
 
     device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
-    model = AutoEncoder(is_clamping=True).to(device)
+    model = AutoEncoder(is_clamping=clamp).to(device)
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
         print("Let's use", torch.cuda.device_count(), "GPUs!")
@@ -119,6 +120,9 @@ def main():
             img = Variable(img).to(device)
             # ===================forward=====================
             output = model(img)
+            # import ipdb
+            # ipdb.set_trace()
+
             loss = criterion(output, img)
             # ===================backward====================
             optimizer.zero_grad()
