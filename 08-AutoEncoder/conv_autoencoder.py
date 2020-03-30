@@ -32,7 +32,9 @@ class AutoEncoder(nn.Module):
         self.conv2d_2 = nn.Conv2d(16, 8, 3, stride=2, padding=1)  # b, 8, 3, 3
         self.relu_2 = nn.ReLU(True)
         self.max_pool_2d_2 = nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
+        self.fc = nn.Linear(4096, self.latent_dim)
 
+        self.d_fc = nn.Linear(self.latent_dim, 32)
         self.d_conv_trans_2d_1 = nn.ConvTranspose2d(8, 16, 3, stride=2)  # b, 16, 5, 5
         self.d_relu_1 = nn.ReLU(True)
         self.d_conv_trans_2d_2 = nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1)  # b, 8, 15, 15
@@ -47,16 +49,19 @@ class AutoEncoder(nn.Module):
         return x + eps * std
 
     def encode(self, x):
-        # import ipdb; ipdb.set_trace()
         h1 = self.conv2d_1(x)
         h2 = self.relu_1(h1)
         h3 = self.max_pool_2d_1(h2)
         h4 = self.conv2d_2(h3)
         h5 = self.relu_2(h4)
-        return self.max_pool_2d_2(h5)
+        h6 = self.max_pool_2d_2(h5)
+        h6 = h6.view(-1, 4096)
+        return self.fc(h6)
 
     def decode(self, x):
-        h1 = self.d_conv_trans_2d_1(x)
+        h0 = self.d_fc(x)
+        h0 = h0.view([2, 8, 2, 1])
+        h1 = self.d_conv_trans_2d_1(h0)
         h2 = self.d_relu_1(h1)
         h3 = self.d_conv_trans_2d_2(h2)
         h4 = self.d_relu_2(h3)

@@ -11,6 +11,7 @@ class DCIGNClamping(torch.autograd.Function):
         mask[index] = False
         ctx.save_for_backward(data_in, index, mask)
         batch_index = 0
+        # import ipdb; ipdb.set_trace()
         data_in[:, mask] = torch.mean(data_in[:, mask], dim=batch_index, keepdim=True)
         return data_in
 
