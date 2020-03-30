@@ -11,9 +11,12 @@ from torchvision.datasets import MNIST
 
 from DCIGNClamping import DCIGNClamping
 
+import ipdb
+
 num_epochs = 100
 batch_size = 200
 learning_rate = 1e-3
+number_of_devices = 1
 
 clamp = False
 
@@ -33,9 +36,9 @@ class AutoEncoder(nn.Module):
         self.conv2d_2 = nn.Conv2d(16, 8, 3, stride=2, padding=1)  # b, 8, 3, 3
         self.relu_2 = nn.ReLU(True)
         self.max_pool_2d_2 = nn.MaxPool2d(2, stride=1)  # b, 8, 2, 2
-        self.fc = nn.Linear(batch_size * 32, self.latent_dim)
+        self.fc = nn.Linear(int(batch_size * 32 / number_of_devices), self.latent_dim)
 
-        self.d_fc = nn.Linear(self.latent_dim, batch_size * 32)
+        self.d_fc = nn.Linear(self.latent_dim, int(batch_size * 32 / number_of_devices))
         self.d_conv_trans_2d_1 = nn.ConvTranspose2d(8, 16, 3, stride=2)  # b, 16, 5, 5
         self.d_relu_1 = nn.ReLU(True)
         self.d_conv_trans_2d_2 = nn.ConvTranspose2d(16, 8, 5, stride=3, padding=1)  # b, 8, 15, 15
@@ -56,12 +59,12 @@ class AutoEncoder(nn.Module):
         h4 = self.conv2d_2(h3)
         h5 = self.relu_2(h4)
         h6 = self.max_pool_2d_2(h5)
-        h6 = h6.view(-1, batch_size * 32)
+        h6 = h6.view(-1, int(batch_size * 32 / number_of_devices))
         return self.fc(h6)
 
     def decode(self, x):
         h0 = self.d_fc(x)
-        h0 = h0.view([batch_size, 8, 2, 2])
+        h0 = h0.view([int(batch_size / number_of_devices), 8, 2, 2])
         h1 = self.d_conv_trans_2d_1(h0)
         h2 = self.d_relu_1(h1)
         h3 = self.d_conv_trans_2d_2(h2)
@@ -92,11 +95,12 @@ def main():
     if not os.path.exists('./dc_img'):
         os.mkdir('./dc_img')
 
+    number_of_devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
     device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
     model = AutoEncoder(is_clamping=clamp).to(device)
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
-        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        print("Let's use", number_of_devices, "GPUs!")
         model = nn.DataParallel(model)
 
     criterion = nn.MSELoss()
