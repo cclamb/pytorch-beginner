@@ -60,12 +60,14 @@ class AutoEncoder(nn.Module):
         h4 = self.conv2d_2(h3)
         h5 = self.relu_2(h4)
         h6 = self.max_pool_2d_2(h5)
-        h6 = h6.view(-1, int(self.batch_size * 32 / self.number_processors))
-        return self.fc(h6)
+        return h6
+        # h6 = h6.view(-1, int(self.batch_size * 32 / self.number_processors))
+        # return self.fc(h6)
 
     def decode(self, x):
-        h0 = self.d_fc(x)
-        h0 = h0.view([int(self.batch_size / self.number_processors), 8, 2, 2])
+        # h0 = self.d_fc(x)
+        # h0 = h0.view([int(self.batch_size / self.number_processors), 8, 2, 2])
+        h0 = x
         h1 = self.d_conv_trans_2d_1(h0)
         h2 = self.d_relu_1(h1)
         h3 = self.d_conv_trans_2d_2(h2)
