@@ -95,8 +95,9 @@ def to_img(x):
 def run(latent_dim):
     clamp_state = '_clamp' if clamp else '_no_clamp'
     latency_state = '_{}'.format(latent_dim)
-    if not os.path.exists('./dc_img{}{}'.format(clamp_state, latency_state)):
-        os.mkdir('./dc_img{}{}'.format(clamp_state, latency_state))
+    output_directory = './dc_img{}{}'.format(clamp_state, latency_state)
+    if not os.path.exists(output_directory):
+        os.mkdir(output_directory)
 
     number_of_devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
     device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
@@ -146,9 +147,9 @@ def run(latent_dim):
 
         if epoch % 10 == 0:
             pic = to_img(output.cpu().data)
-            save_image(pic, './dc_img/image_{}.png'.format(epoch))
+            save_image(pic, './{}/image_{}.png'.format(output_directory, epoch))
 
-    torch.save(model.state_dict(), './conv_autoencoder.pth')
+    torch.save(model.state_dict(), './{}/conv_autoencoder.pth'.format(output_directory))
 
 
 def main():
