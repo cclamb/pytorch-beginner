@@ -94,9 +94,11 @@ def to_img(x):
     return x
 
 
-def main():
-    if not os.path.exists('./dc_img'):
-        os.mkdir('./dc_img')
+def run(latent_dim):
+    clamp_state = '_clamp' if clamp else '_no_clamp'
+    latency_state = '_{}'.format(latent_dim)
+    if not os.path.exists('./dc_img{}{}'.format(clamp_state, latency_state)):
+        os.mkdir('./dc_img{}{}'.format(clamp_state, latency_state))
 
     number_of_devices = torch.cuda.device_count() if torch.cuda.is_available() else 1
     device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
@@ -149,6 +151,12 @@ def main():
 
     torch.save(model.state_dict(), './conv_autoencoder.pth')
 
+
+def main():
+    for latent_dim in [4, 8, 16, 32, 64, 128]:
+        print('[running convnet with {} latent variables]'.format(latent_dim))
+        run(latent_dim)
+        print('[finished]')
 
 if __name__ == "__main__":
     main()
