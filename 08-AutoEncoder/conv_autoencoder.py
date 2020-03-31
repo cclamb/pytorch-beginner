@@ -20,12 +20,12 @@ learning_rate = 1e-3
 clamp = False
 
 class AutoEncoder(nn.Module):
-    def __init__(self, is_clamping=True, number_processors=1, batch_size=100):
+    def __init__(self, is_clamping=True, number_processors=1, batch_size=100, latent_dim=16):
         super(AutoEncoder, self).__init__()
 
         self.is_clamping = is_clamping
 
-        self.latent_dim = 128
+        self.latent_dim = latent_dim
         self.number_processors = number_processors
         DCIGNClamping.latent_dim = self.latent_dim
         self.dcign = DCIGNClamping.apply
@@ -60,14 +60,12 @@ class AutoEncoder(nn.Module):
         h4 = self.conv2d_2(h3)
         h5 = self.relu_2(h4)
         h6 = self.max_pool_2d_2(h5)
-        return h6
-        # h6 = h6.view(-1, int(self.batch_size * 32 / self.number_processors))
-        # return self.fc(h6)
+        h6 = h6.view(-1, int(self.batch_size * 32 / self.number_processors))
+        return self.fc(h6)
 
     def decode(self, x):
-        # h0 = self.d_fc(x)
-        # h0 = h0.view([int(self.batch_size / self.number_processors), 8, 2, 2])
-        h0 = x
+        h0 = self.d_fc(x)
+        h0 = h0.view([int(self.batch_size / self.number_processors), 8, 2, 2])
         h1 = self.d_conv_trans_2d_1(h0)
         h2 = self.d_relu_1(h1)
         h3 = self.d_conv_trans_2d_2(h2)
@@ -105,7 +103,8 @@ def run(latent_dim):
     model = AutoEncoder(
         is_clamping=clamp,
         number_processors=number_of_devices,
-        batch_size=batch_size
+        batch_size=batch_size,
+        latent_dim=latent_dim
     ).to(device)
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
@@ -153,7 +152,16 @@ def run(latent_dim):
 
 
 def main():
-    for latent_dim in [4, 8, 16, 32, 64, 128]:
+    global clamp
+    clamp = False
+    print('clamping OFF')
+    for latent_dim in [128, 64, 32, 16, 8, 4]:
+        print('[running convnet with {} latent variables]'.format(latent_dim))
+        run(latent_dim)
+        print('[finished]')
+    clamp = True
+    print('[clamping ON]')
+    for latent_dim in [128, 64, 32, 16, 8, 4]:
         print('[running convnet with {} latent variables]'.format(latent_dim))
         run(latent_dim)
         print('[finished]')
