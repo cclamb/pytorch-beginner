@@ -11,7 +11,6 @@ from torchvision.datasets import MNIST
 
 from DCIGNClamping import DCIGNClamping
 
-import ipdb
 
 num_epochs = 100
 batch_size = 200
@@ -109,7 +108,7 @@ def run(latent_dim):
     ).to(device)
 
     if torch.cuda.is_available() and torch.cuda.device_count() > 1:
-        print("Let's use", number_of_devices, "GPUs!")
+        print("Let's use", number_of_devices, "GPUs!", flush=True)
         model = nn.DataParallel(model)
 
     criterion = nn.MSELoss()
@@ -143,7 +142,7 @@ def run(latent_dim):
             optimizer.step()
         # ===================log========================
         print('epoch [{}/{}], loss:{:.4f}'
-              .format(epoch+1, num_epochs, loss.item()))
+              .format(epoch+1, num_epochs, loss.item()), flush=True)
 
         if epoch % 10 == 0:
             pic = to_img(output.cpu().data)
@@ -157,15 +156,15 @@ def main():
     clamp = False
     print('clamping OFF')
     for latent_dim in [128, 64, 32, 16, 8, 4]:
-        print('[running convnet with {} latent variables]'.format(latent_dim))
+        print('[running convnet with {} latent variables]'.format(latent_dim), flush=True)
         run(latent_dim)
-        print('[finished]')
+        print('[finished]', flush=True)
     clamp = True
     print('[clamping ON]')
     for latent_dim in [128, 64, 32, 16, 8, 4]:
-        print('[running convnet with {} latent variables]'.format(latent_dim))
+        print('[running convnet with {} latent variables]'.format(latent_dim), flush=True)
         run(latent_dim)
-        print('[finished]')
+        print('[finished]', flush=True)
 
 if __name__ == "__main__":
     main()
