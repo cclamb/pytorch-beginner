@@ -25,7 +25,7 @@ class AutoEncoder(nn.Module):
 
         self.is_clamping = is_clamping
 
-        self.latent_dim = 10
+        self.latent_dim = 64
         self.number_processors = number_processors
         DCIGNClamping.latent_dim = self.latent_dim
         self.dcign = DCIGNClamping.apply
