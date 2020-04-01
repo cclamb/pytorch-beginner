@@ -223,8 +223,12 @@ def run_decode(number_of_devices=1, is_clamping=True, current_batch_size=1, late
         latent_vector[i] = 1
         output = generator.forward(latent_vector)
         data[i, :, :, :] = output
-    pic = to_contrast_img(data.cpu().data)
-    save_image(pic, './image_construct_{}_lv.png'.format(latent_dim))
+    pic = to_img(data.cpu().data)
+    save_image(pic, './image_construct_{}_lv.png'.format(latent_dim), padding=1, pad_value=0.5)
+
+
+def run_all_decode():
+    pass
 
 
 def main():
