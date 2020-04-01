@@ -1,5 +1,6 @@
 
 import os
+from collections import OrderedDict
 
 import torch
 from torch import nn
@@ -19,6 +20,17 @@ batch_size = 200
 learning_rate = 1e-3
 
 clamp = False
+
+
+class DecodeAdapter(nn.Module):
+    def __init__(self, autoencoder):
+        super(DecodeAdapter, self).__init__()
+        self.autoencoder = autoencoder
+
+    def forward(self, x):
+        output = self.autoencoder.decode(x)
+        return output
+
 
 class AutoEncoder(nn.Module):
     def __init__(self, is_clamping=True, number_processors=1, batch_size=100, latent_dim=16):
@@ -85,10 +97,17 @@ class AutoEncoder(nn.Module):
         out = self.decode(x)
         return out
 
-
 def to_img(x):
     x = 0.5 * (x + 1)
     x = x.clamp(0, 1)
+    x = x.view(x.size(0), 1, 28, 28)
+    return x
+
+def to_contrast_img(x):
+    # ipdb.set_trace()
+    x = 0.5 * (x + 1)
+    x = 255 * x
+    x = x.clamp(0, 255)
     x = x.view(x.size(0), 1, 28, 28)
     return x
 
@@ -132,16 +151,16 @@ def run(latent_dim):
         for data in dataloader:
             img, _ = data
             img = Variable(img).to(device)
+
             # ===================forward=====================
             output = model(img)
-            # import ipdb
-            # ipdb.set_trace()
-
             loss = criterion(output, img)
+
             # ===================backward====================
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
         # ===================log========================
         print('epoch [{}/{}], loss:{:.4f}'
               .format(epoch+1, num_epochs, loss.item()), flush=True)
@@ -151,6 +170,7 @@ def run(latent_dim):
             save_image(pic, './{}/image_{}.png'.format(output_directory, epoch))
 
     torch.save(model.state_dict(), './{}/conv_autoencoder.pth'.format(output_directory))
+
 
 def run_all():
     global clamp
@@ -167,8 +187,49 @@ def run_all():
         run(latent_dim)
         print('[finished]', flush=True)
 
+
+def parallel_to_serial_state(state_dict):
+    # State dicts created using dataparallel reference 'module';
+    # we need to remove that to load serially
+    # create new OrderedDict that does not contain `module.`
+    new_state_dict = OrderedDict()
+    for k, v in state_dict.items():
+        # odict_keys is not subscriptable, so rather than creating
+        # a list just to check for the 'module' prifix, just do it
+        # here. If one key has 'module', they all will.
+        if 'module' not in k:
+            return state_dict
+        name = k[7:]  # remove `module.`
+        new_state_dict[name] = v
+    return new_state_dict
+
+
+def run_decode(number_of_devices=1, is_clamping=True, current_batch_size=1, latent_dim=32):
+    device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
+    model = AutoEncoder(
+        is_clamping=is_clamping,
+        number_processors=number_of_devices,
+        batch_size=current_batch_size,
+        latent_dim=latent_dim
+    ).to(device)
+    state_dict = torch.load('./conv_autoencoder.pth', map_location=device)
+    state_dict = parallel_to_serial_state(state_dict)
+    model.load_state_dict(state_dict)
+    model.eval()
+    generator = DecodeAdapter(model)
+    data = torch.zeros([latent_dim, 1, 28, 28])
+    for i in range(latent_dim):
+        latent_vector = torch.zeros(latent_dim)
+        latent_vector[i] = 1
+        output = generator.forward(latent_vector)
+        data[i, :, :, :] = output
+    pic = to_contrast_img(data.cpu().data)
+    save_image(pic, './image_construct_{}_lv.png'.format(latent_dim))
+
+
 def main():
-    run_all()
+    run_decode()
+
 
 if __name__ == "__main__":
     main()
