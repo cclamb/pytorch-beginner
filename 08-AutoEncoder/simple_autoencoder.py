@@ -11,6 +11,9 @@ from torchvision.utils import save_image
 
 from DCIGNClamping import DCIGNClamping
 
+import ipdb
+
+
 num_epochs = 100
 batch_size = 128
 learning_rate = 1e-3
@@ -57,7 +60,9 @@ class AutoEncoder(nn.Module):
         h4 = self.relu_2(h3)
         h5 = self.linear_3(h4)
         h6 = self.relu_3(h5)
-        return self.linear_4(h6)
+        h7 = self.linear_4(h6)
+        ipdb.set_trace()
+        return h7
 
     def decode(self, x):
         h1 = self.d_linear_1(x)
@@ -67,7 +72,8 @@ class AutoEncoder(nn.Module):
         h5 = self.d_linear_3(h4)
         h6 = self.d_relu_3(h5)
         h7 = self.d_linear_4(h6)
-        return self.d_tanh(h7)
+        h8 = self.d_tanh(h7)
+        return h8
 
     def forward(self, x, idx=None):
         x = self.encode(x)

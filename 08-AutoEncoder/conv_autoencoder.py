@@ -204,7 +204,11 @@ def parallel_to_serial_state(state_dict):
     return new_state_dict
 
 
-def run_decode(number_of_devices=1, is_clamping=True, current_batch_size=1, latent_dim=32):
+def run_decode(number_of_devices=1,
+               is_clamping=True,
+               current_batch_size=1,
+               latent_dim=32,
+               saved_model='./conv_autoencoder_32.pth'):
     device = torch.device(("cuda" if torch.cuda.is_available() else "cpu"))
     model = AutoEncoder(
         is_clamping=is_clamping,
@@ -212,7 +216,7 @@ def run_decode(number_of_devices=1, is_clamping=True, current_batch_size=1, late
         batch_size=current_batch_size,
         latent_dim=latent_dim
     ).to(device)
-    state_dict = torch.load('./conv_autoencoder.pth', map_location=device)
+    state_dict = torch.load(saved_model, map_location=device)
     state_dict = parallel_to_serial_state(state_dict)
     model.load_state_dict(state_dict)
     model.eval()
@@ -228,11 +232,13 @@ def run_decode(number_of_devices=1, is_clamping=True, current_batch_size=1, late
 
 
 def run_all_decode():
-    pass
+    for latent_dim in [128, 64, 32, 16, 8, 4]:
+        model_file = 'conv_autoencoder_{}.pth'.format(latent_dim)
+        run_decode(latent_dim=latent_dim, saved_model=model_file)
 
 
 def main():
-    run_decode()
+    run_all_decode()
 
 
 if __name__ == "__main__":
